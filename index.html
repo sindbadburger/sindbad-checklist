@@ -2,9 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Sindbad Burger — Daily Checklist</title>
+
+<!-- Browser tab favicon -->
 <link rel="icon" href="sindbad.jpg" />
+<link rel="shortcut icon" href="sindbad.jpg" />
+
+<!-- iOS Home Screen icon -->
+<link rel="apple-touch-icon" href="sindbad.jpg" />
+<link rel="apple-touch-icon" sizes="180x180" href="sindbad.jpg" />
+<link rel="apple-touch-icon" sizes="152x152" href="sindbad.jpg" />
+<link rel="apple-touch-icon" sizes="120x120" href="sindbad.jpg" />
+
+<!-- Android Chrome Home Screen icon -->
+<link rel="icon" sizes="192x192" href="sindbad.jpg" />
+<link rel="icon" sizes="512x512" href="sindbad.jpg" />
+
+<!-- Open as full-screen app when launched from Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Sindbad Burger" />
+<meta name="application-name" content="Sindbad Burger" />
+
+<!-- Teal status bar to match the app header -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#097C87" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
@@ -20,7 +43,13 @@
   .screen.active { display: flex; }
 
   /* ---------- DARK SCREENS ---------- */
-  .dark { background: #097C87; color: #fff; align-items: center; justify-content: center; padding: 24px; }
+  .dark {
+    background: #097C87; color: #fff;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
   .dark .logo {
     width: 96px; height: 96px; border-radius: 50%;
     border: 3px solid #40E0D0; object-fit: cover; overflow: hidden;
@@ -174,9 +203,9 @@
   /* ---------- LIGHT SCREENS (CHECKLIST / REVIEW) ---------- */
   .header {
     background: #097C87;
-    height: 60px;
+    height: calc(60px + env(safe-area-inset-top));
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 16px;
+    padding: env(safe-area-inset-top) 16px 0;
     border-bottom: 1px solid rgba(255,255,255,.15);
     position: sticky; top: 0; z-index: 10;
   }
@@ -318,6 +347,7 @@
     background: #fff;
     border-top: 1px solid #C8EEF0;
     padding: 12px 14px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
     display: flex; gap: 10px;
     box-shadow: 0 -4px 14px rgba(9,124,135,.08);
   }
