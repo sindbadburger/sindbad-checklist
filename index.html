@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Sindbad Burger — Daily Checklist</title>
+<link rel="icon" href="sindbad.jpg" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F4FEFE;
+    color: #0A1F20;
+    overflow-x: hidden;
+  }
+  .screen { display: none; flex-direction: column; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ---------- DARK SCREENS ---------- */
+  .dark { background: #097C87; color: #fff; align-items: center; justify-content: center; padding: 24px; }
+  .dark .logo {
+    width: 96px; height: 96px; border-radius: 50%;
+    border: 3px solid #40E0D0; object-fit: cover; overflow: hidden;
+    margin-bottom: 18px;
+    box-shadow: 0 0 30px rgba(64,224,208,.25);
+  }
+  .dark .brand-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 700; margin-bottom: 4px; text-align: center;
+  }
+  .dark .brand-sub {
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    color: #B2EEF2; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 28px;
+  }
+
+  /* ---------- PIN ---------- */
+  .pin-dots { display: flex; gap: 14px; margin: 16px 0 22px; }
+  .pin-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.5); background: transparent;
+    transition: all .15s;
+  }
+  .pin-dot.filled { background: #fff; border-color: #fff; }
+  .pin-err { color: #FFB4B4; font-size: 13px; min-height: 18px; margin-bottom: 14px; }
+  .keypad {
+    display: grid; grid-template-columns: repeat(3, 78px); gap: 14px;
+    justify-content: center;
+  }
+  .key {
+    width: 78px; height: 78px; border-radius: 50%;
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #fff; font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+    backdrop-filter: blur(8px);
+  }
+  .key:hover, .key:active { background: rgba(255,255,255,.20); transform: scale(.96); }
+  .key.fn { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+  .key.invisible { visibility: hidden; }
+  .shake { animation: shake .35s; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-8px)} 40%{transform:translateX(8px)}
+    60%{transform:translateX(-6px)} 80%{transform:translateX(6px)}
+  }
+
+  /* ---------- NAME / DATE / SHIFT ---------- */
+  .glass-card {
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 22px;
+    backdrop-filter: blur(10px);
+    padding: 26px 22px;
+    width: 100%; max-width: 380px;
+  }
+  .field { margin-bottom: 16px; }
+  .field-label {
+    color: #40E0D0; font-size: 10px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 6px; display: block;
+  }
+  .field-input {
+    width: 100%;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 12px 14px;
+    outline: none;
+  }
+  .field-input::placeholder { color: rgba(255,255,255,.55); }
+  .field-input:focus { border-color: #40E0D0; background: rgba(255,255,255,.18); }
+  .shift-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+  .shift-btn {
+    background: #C8922A;
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 18px 12px;
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .shift-btn.closing { background: #097C87; border: 1.5px solid #40E0D0; }
+  .shift-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  .shift-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ---------- GOOGLE SIGN-IN ---------- */
+  .gbtn-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    margin-top: 18px;
+  }
+  .gbtn-hint {
+    color: #B2EEF2; font-size: 12px; text-align: center; line-height: 1.5;
+    max-width: 280px;
+  }
+  .gbtn-err { color: #FFB4B4; font-size: 12px; min-height: 18px; text-align: center; }
+  .g-config-warn {
+    background: rgba(255,180,76,.15);
+    border: 1px solid rgba(255,180,76,.45);
+    color: #FFE4B5;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    margin-top: 14px;
+    max-width: 320px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ---------- SIGNED-IN PILL (on Name screen) ---------- */
+  .signed-pill {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 999px;
+    padding: 6px 10px 6px 6px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(8px);
+    width: 100%; max-width: 380px;
+  }
+  .signed-pill img {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid #40E0D0; object-fit: cover; flex-shrink: 0;
+  }
+  .signed-pill .sp-info { flex: 1; min-width: 0; }
+  .signed-pill .sp-name {
+    color: #fff; font-size: 12px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .signed-pill .sp-mail {
+    color: #B2EEF2; font-size: 11px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .signed-pill .sp-out {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.30);
+    color: #fff;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .signed-pill .sp-out:hover { background: rgba(255,255,255,.25); }
+
+  /* ---------- LIGHT SCREENS (CHECKLIST / REVIEW) ---------- */
+  .header {
+    background: #097C87;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(255,255,255,.15);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .header .h-left { display: flex; align-items: center; gap: 10px; }
+  .header img.h-logo {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1.5px solid #40E0D0; object-fit: cover;
+  }
+  .header .h-title {
+    color: #fff; font-family: 'Playfair Display', serif;
+    font-size: 17px; font-weight: 700;
+  }
+  .header .h-sub {
+    color: #B2EEF2; font-size: 11px; font-weight: 500;
+  }
+  .header .h-back {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #fff; padding: 7px 12px; border-radius: 8px;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  .user-bar {
+    background: #23CED9; color: #003a40;
+    padding: 10px 16px;
+    font-size: 12px; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 2px solid rgba(0,0,0,.06);
+  }
+  .user-bar .progress { font-weight: 700; }
+
+  .content {
+    flex: 1;
+    padding: 16px 14px 100px;
+    overflow-y: auto;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px; font-weight: 700; color: #097C87;
+    margin: 18px 4px 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #C8EEF0;
+  }
+  .section-title:first-child { margin-top: 4px; }
+
+  .task-card {
+    background: #fff;
+    border: 1.5px solid #C8EEF0;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    transition: all .18s;
+  }
+  .task-card.done {
+    border-color: #C8922A;
+    background: #FDF6E8;
+  }
+  .task-card.missing {
+    border-color: #A32020;
+    background: #FDEDEC;
+    animation: shake .35s;
+  }
+  .task-row {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .task-check {
+    width: 26px; height: 26px;
+    border: 2px solid #097C87;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    background: #fff;
+    transition: all .15s;
+    margin-top: 2px;
+  }
+  .task-card.done .task-check {
+    background: #C8922A; border-color: #C8922A;
+  }
+  .task-card.done .task-check::after {
+    content: '✓'; color: #fff; font-weight: 700; font-size: 16px;
+  }
+  .task-body { flex: 1; }
+  .task-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px; font-weight: 500; color: #0A1F20; line-height: 1.35;
+  }
+  .task-num {
+    color: #3D7A80; font-size: 12px; font-weight: 700; margin-right: 6px;
+  }
+  .task-extras {
+    margin-top: 10px;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .note-input {
+    flex: 1; min-width: 160px;
+    background: #EBF9FA;
+    border: 1px solid #C8EEF0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'Inter', sans-serif; font-size: 12px;
+    color: #0A1F20;
+    outline: none;
+  }
+  .note-input:focus { border-color: #23CED9; background: #fff; }
+  .photo-btn {
+    background: #097C87; color: #fff;
+    border: none; border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .photo-btn .ico { font-size: 14px; }
+  .photo-input { display: none; }
+  .photo-thumbs {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .photo-thumb {
+    position: relative;
+    width: 56px; height: 56px;
+    border-radius: 8px;
+    border: 1.5px solid #C8EEF0;
+    background-size: cover; background-position: center;
+  }
+  .photo-thumb .rm {
+    position: absolute; top: -6px; right: -6px;
+    width: 18px; height: 18px;
+    border-radius: 50%; background: #A32020; color: #fff;
+    font-size: 11px; font-weight: 700;
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+
+  /* ---------- SUBMIT BAR ---------- */
+  .submit-bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #fff;
+    border-top: 1px solid #C8EEF0;
+    padding: 12px 14px;
+    display: flex; gap: 10px;
+    box-shadow: 0 -4px 14px rgba(9,124,135,.08);
+  }
+  .btn-primary {
+    flex: 1;
+    background: #C8922A; color: #fff;
+    border: none; border-radius: 14px;
+    padding: 14px;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px; font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-primary:hover { background: #E8B84B; }
+  .btn-primary:disabled { background: #B7C9CB; cursor: not-allowed; }
+  .btn-outline {
+    background: #fff; color: #097C87;
+    border: 1.5px solid #23CED9;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-family: 'Playfair Display', serif;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ---------- WARNING TOAST ---------- */
+  .toast {
+    position: fixed; left: 50%; top: 70px;
+    transform: translateX(-50%);
+    background: #A32020; color: #fff;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    box-shadow: 0 6px 20px rgba(163,32,32,.35);
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    max-width: 90%; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- REVIEW SCREEN ---------- */
+  .review-summary {
+    background: #fff;
+    border: 1.5px solid #C8EEF0;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .review-summary .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+  .review-summary .row .k { color: #3D7A80; font-weight: 600; }
+  .review-summary .row .v { color: #0A1F20; font-weight: 700; }
+
+  .review-item {
+    background: #fff; border: 1px solid #C8EEF0;
+    border-radius: 10px; padding: 10px 12px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .review-item .ri-task { color: #0A1F20; }
+  .review-item .ri-note {
+    margin-top: 4px; color: #3D7A80; font-size: 12px; font-style: italic;
+  }
+  .review-item .ri-photos { margin-top: 6px; font-size: 11px; color: #097C87; font-weight: 600; }
+
+  /* ---------- SUCCESS ---------- */
+  .success-circle {
+    width: 92px; height: 92px;
+    border-radius: 50%;
+    background: rgba(64,224,208,.20);
+    border: 2px solid #40E0D0;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 22px;
+    color: #fff; font-size: 48px;
+  }
+  .success-msg {
+    text-align: center; color: #fff;
+    font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .success-sub { color: #B2EEF2; font-size: 13px; text-align: center; margin-bottom: 24px; }
+
+  /* ---------- LOADING ---------- */
+  .loader {
+    position: fixed; inset: 0;
+    background: rgba(9,124,135,.85);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; flex-direction: column; gap: 14px;
+  }
+  .loader.show { display: flex; }
+  .loader .spinner {
+    width: 50px; height: 50px;
+    border: 4px solid rgba(255,255,255,.25);
+    border-top-color: #40E0D0;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  .loader .ltxt { color: #fff; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 380px) {
+    .keypad { grid-template-columns: repeat(3, 70px); gap: 12px; }
+    .key { width: 70px; height: 70px; font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============== PIN SCREEN ============== -->
+<section id="ps" class="screen dark active">
+  <img src="sindbad.jpg" alt="Sindbad Burger" class="logo" onerror="this.style.display='none'"/>
+  <div class="brand-title">Sindbad Burger</div>
+  <div class="brand-sub">Daily Checklist</div>
+  <div class="pin-dots" id="pinDots">
+    <div class="pin-dot"></div><div class="pin-dot"></div>
+    <div class="pin-dot"></div><div class="pin-dot"></div>
+  </div>
+  <div class="pin-err" id="pinErr">&nbsp;</div>
+  <div class="keypad" id="keypad">
+    <button class="key" data-k="1">1</button>
+    <button class="key" data-k="2">2</button>
+    <button class="key" data-k="3">3</button>
+    <button class="key" data-k="4">4</button>
+    <button class="key" data-k="5">5</button>
+    <button class="key" data-k="6">6</button>
+    <button class="key" data-k="7">7</button>
+    <button class="key" data-k="8">8</button>
+    <button class="key" data-k="9">9</button>
+    <button class="key fn invisible"></button>
+    <button class="key" data-k="0">0</button>
+    <button class="key fn" data-k="del">DEL</button>
+  </div>
+</section>
+
+<!-- ============== GOOGLE SIGN-IN SCREEN ============== -->
+<section id="gs" class="screen dark">
+  <img src="sindbad.jpg" alt="Sindbad Burger" class="logo" onerror="this.style.display='none'"/>
+  <div class="brand-title">Sign in with Google</div>
+  <div class="brand-sub">Confirm who you are</div>
+  <div class="gbtn-wrap">
+    <div id="gBtn"></div>
+    <div class="gbtn-hint">Use your Gmail or Google account so we know who completed the checklist.</div>
+    <div class="gbtn-err" id="gErr">&nbsp;</div>
+    <div class="g-config-warn" id="gWarn" style="display:none;">
+      Google Sign-In is not configured yet. <br/>See <code>README.md</code> &rarr; <em>Google Sign-In setup</em>.
+    </div>
+  </div>
+</section>
+
+<!-- ============== NAME / DATE / SHIFT SCREEN ============== -->
+<section id="ns" class="screen dark">
+  <img src="sindbad.jpg" alt="Sindbad Burger" class="logo" onerror="this.style.display='none'"/>
+  <div class="brand-title">Start Shift Checklist</div>
+  <div class="brand-sub">Enter info then pick shift</div>
+
+  <div class="signed-pill" id="signedPill" style="display:none;">
+    <img id="spImg" src="" alt="" onerror="this.style.display='none'"/>
+    <div class="sp-info">
+      <div class="sp-name" id="spName"></div>
+      <div class="sp-mail" id="spMail"></div>
+    </div>
+    <button class="sp-out" id="spOut">Sign out</button>
+  </div>
+
+  <div class="glass-card">
+    <div class="field">
+      <label class="field-label" for="nameInput">Staff Name</label>
+      <input type="text" id="nameInput" class="field-input" placeholder="Your name" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label class="field-label" for="dateInput">Date</label>
+      <input type="date" id="dateInput" class="field-input" />
+    </div>
+    <div class="shift-btns">
+      <button class="shift-btn" id="btnOpening" disabled>Opening</button>
+      <button class="shift-btn closing" id="btnClosing" disabled>Closing</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============== CHECKLIST SCREEN ============== -->
+<section id="cls" class="screen">
+  <div class="header">
+    <div class="h-left">
+      <img src="sindbad.jpg" alt="logo" class="h-logo" onerror="this.style.display='none'"/>
+      <div>
+        <div class="h-title" id="clTitle">Opening Checklist</div>
+        <div class="h-sub" id="clSub">— —</div>
+      </div>
+    </div>
+    <button class="h-back" id="clBack">← Back</button>
+  </div>
+  <div class="user-bar">
+    <span id="userBarName">Staff</span>
+    <span class="progress" id="userBarProgress">0 / 0</span>
+  </div>
+  <div class="content" id="taskList"></div>
+  <div class="submit-bar">
+    <button class="btn-primary" id="btnReview">Review &amp; Submit</button>
+  </div>
+</section>
+
+<!-- ============== REVIEW SCREEN ============== -->
+<section id="rvs" class="screen">
+  <div class="header">
+    <div class="h-left">
+      <img src="sindbad.jpg" alt="logo" class="h-logo" onerror="this.style.display='none'"/>
+      <div>
+        <div class="h-title">Review Checklist</div>
+        <div class="h-sub" id="rvSub">— —</div>
+      </div>
+    </div>
+    <button class="h-back" id="rvBack">← Edit</button>
+  </div>
+  <div class="content" id="reviewContent"></div>
+  <div class="submit-bar">
+    <button class="btn-outline" id="rvBackBtn">Edit</button>
+    <button class="btn-primary" id="btnSubmit">Submit Checklist</button>
+  </div>
+</section>
+
+<!-- ============== SUCCESS SCREEN ============== -->
+<section id="scs" class="screen dark">
+  <div class="success-circle">✓</div>
+  <div class="success-msg">Checklist Submitted</div>
+  <div class="success-sub" id="successSub">Thanks — sent to manager.</div>
+  <div class="glass-card" style="max-width:340px;text-align:center;">
+    <button class="shift-btn" id="btnDone" style="width:100%;">Done</button>
+  </div>
+</section>
+
+<!-- TOAST + LOADER -->
+<div class="toast" id="toast"></div>
+<div class="loader" id="loader">
+  <div class="spinner"></div>
+  <div class="ltxt" id="loaderTxt">Submitting…</div>
+</div>
+
+<script>
+/* ====================================================================
+ * SINDBAD BURGER — DAILY CHECKLIST APP
+ * ==================================================================== */
+
+/* ----- Apps Script Webhook (replace after deploying apps-script.gs) -- */
+window.SHEET_URL = "https://script.google.com/macros/s/AKfycbzpqWeo3PAMxsIp0ITHY8OsoSRkQClwR5SCVHy4Tvqa37FtgkDB1--e88C04Wqq6KrCfQ/exec";
+
+/* ----- Google OAuth Client ID (see README.md → Google Sign-In setup) --- */
+window.GOOGLE_CLIENT_ID = "315489164345-mft5dv5usasvvuc7mr9auht0uhj5mthr.apps.googleusercontent.com";
+
+/* ----- PIN ----- */
+const PIN = "1981";
+
+/* ----- CHECKLIST DATA (from Sindbad Burger Opening_Closing Checklists.md) ----- */
+const CHECKLISTS = {
+  opening: {
+    title: "Opening Checklist",
+    sections: [
+      {
+        name: "Front of the House",
+        tasks: [
+          "Turn on lights",
+          "Clock in",
+          "Turn on music and grab phone",
+          "Adjust thermostat to 72",
+          "Check Uber Eats & DoorDash tablets",
+          "Open screen",
+          "Clean all glass in front — appetizer, smoothie, and door",
+          "Sweep floor",
+          "Wipe all surfaces",
+          "Check inventory for all smoothies",
+          "Fill sauce containers (30 Tues–Thur) (60 Fri–Sun)",
+          "Pick mint",
+          "Prepare small and big boxes — minimum 5 of each",
+          "Check all smoothie and soft drink cups, lids, straws",
+          "Check the syrup in soft drink machine",
+          "Check all staff for togo orders",
+        ],
+      },
+      {
+        name: "Back of the House",
+        tasks: [
+          "Clock in",
+          "Wipe food preparation areas",
+          "Prepare salad",
+          "Chop ingredients for kitchen stations",
+          "Add necessary tools and equipment to each station",
+          "Restock incoming inventory",
+          "Prepare stock for daily inventory",
+          "Check the temperature of freezers and fridges",
+          "Put Shawarma on stove",
+          "Take the buns out of the freezer",
+          "Restock all line stations",
+          "Do inventory checklist — Thursday morning and Sunday",
+        ],
+      },
+    ],
+  },
+  closing: {
+    title: "Closing Checklist",
+    sections: [
+      {
+        name: "Front of the House",
+        tasks: [
+          "Wipe down and sanitize all seats and surfaces",
+          "Wipe down glass doors",
+          "Refill any condiments and napkin dispensers",
+          "Sweep and mop all floors",
+          "Refill all serving containers",
+          "Check fountain drink",
+          "Wash all blenders and utensils",
+          "Clean the smoothie sink",
+          "Take out the trash",
+          "Turn off the lights and music",
+          "Adjust thermostat to 75",
+          "Turn off screen",
+          "Check restroom",
+          "Make sure all tablets and phone are plugged in and charging",
+          "Food warmer",
+          "Clock out and check cash",
+          "Sunday morning shift — do inventory checklist",
+        ],
+      },
+      {
+        name: "Back of the House",
+        tasks: [
+          "Remove non-slip mats, clean them, sweep and mop all floors, then put mats back",
+          "Empty kitchen trash cans",
+          "Wash and/or sanitize all cooking utensils, cutting boards, pans, etc.",
+          "Empty the sink — make sure all dishware and kitchenware are clean and sanitized",
+          "Clean and sanitize all prep areas and line stations",
+          "Scrub the flattop and change fryer oil",
+          "Take stock of inventory and adjust any orders",
+          "Consolidate same-food containers; date and label any food not yet dated/labeled",
+          "Rotate inventory in fridge (first in, first out)",
+          "Restock all line stations — ensure all perishable foods are properly stored",
+          "Check the temperature of freezers and fridges",
+          "Check that the walk-in and any other fridges/freezers are shut tight",
+          "Turn off all heaters, ovens, gas stoves and any other equipment/appliances",
+          "Wash the floor",
+          "Make prep list for tomorrow's prep cook",
+          "Lock back doors",
+        ],
+      },
+    ],
+  },
+};
+
+/* ===== State ===== */
+let state = {
+  pin: "",
+  name: "",
+  date: "",
+  shift: null, // 'opening' | 'closing'
+  tasks: [],   // [{ section, idx, label, checked, note, photos:[{name,dataUrl}] }]
+  googleUser: null, // { email, name, picture, sub }
+};
+
+/* ===== Helpers ===== */
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const show = id => {
+  $$('.screen').forEach(s => s.classList.remove('active'));
+  $('#' + id).classList.add('active');
+  window.scrollTo(0, 0);
+};
+const toast = (msg, ms=2400) => {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), ms);
+};
+const loader = (on, txt) => {
+  const l = $('#loader');
+  if (txt) $('#loaderTxt').textContent = txt;
+  l.classList.toggle('show', !!on);
+};
+
+/* ===== PIN ===== */
+function renderPinDots() {
+  $$('.pin-dot').forEach((d, i) => d.classList.toggle('filled', i < state.pin.length));
+}
+function pinPress(k) {
+  $('#pinErr').textContent = '';
+  if (k === 'del') { state.pin = state.pin.slice(0, -1); renderPinDots(); return; }
+  if (state.pin.length >= 4) return;
+  state.pin += k;
+  renderPinDots();
+  if (state.pin.length === 4) {
+    setTimeout(() => {
+      if (state.pin === PIN) {
+        state.pin = ""; renderPinDots();
+        // pre-fill today's date and lock the calendar to today only
+        const today = new Date().toISOString().slice(0, 10);
+        const di = $('#dateInput');
+        di.value = today;
+        di.min = today;
+        di.max = today;
+        // If already signed in, skip Google screen
+        if (state.googleUser) {
+          updateSignedPill();
+          show('ns');
+          setTimeout(()=>$('#nameInput').focus(), 150);
+        } else {
+          show('gs');
+          ensureGoogleButton();
+        }
+      } else {
+        $('#ps').classList.add('shake');
+        $('#pinErr').textContent = 'Wrong PIN — try again';
+        setTimeout(()=>$('#ps').classList.remove('shake'), 350);
+        state.pin = ""; renderPinDots();
+      }
+    }, 120);
+  }
+}
+$$('#keypad .key[data-k]').forEach(b => b.addEventListener('click', () => pinPress(b.dataset.k)));
+document.addEventListener('keydown', e => {
+  if (!$('#ps').classList.contains('active')) return;
+  if (/^[0-9]$/.test(e.key)) pinPress(e.key);
+  else if (e.key === 'Backspace') pinPress('del');
+});
+
+/* ===== GOOGLE SIGN-IN ===== */
+let _gInited = false;
+function ensureGoogleButton() {
+  const isConfigured = window.GOOGLE_CLIENT_ID && !window.GOOGLE_CLIENT_ID.startsWith('REPLACE_');
+  $('#gWarn').style.display = isConfigured ? 'none' : 'block';
+  $('#gErr').textContent = '';
+  if (!isConfigured) return;
+
+  // Wait for the GIS script to load
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+    setTimeout(ensureGoogleButton, 250);
+    return;
+  }
+  if (!_gInited) {
+    google.accounts.id.initialize({
+      client_id: window.GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    _gInited = true;
+  }
+  const wrap = $('#gBtn');
+  wrap.innerHTML = '';
+  google.accounts.id.renderButton(wrap, {
+    theme: 'filled_blue',
+    size: 'large',
+    text: 'signin_with',
+    shape: 'pill',
+    width: 260,
+  });
+}
+
+function handleGoogleCredential(resp) {
+  try {
+    const payload = decodeJwt(resp.credential);
+    state.googleUser = {
+      email: payload.email || '',
+      name: payload.name || '',
+      picture: payload.picture || '',
+      sub: payload.sub || '',
+    };
+    updateSignedPill();
+    // pre-fill today's date again in case it was cleared
+    const today = new Date().toISOString().slice(0, 10);
+    const di = $('#dateInput');
+    if (!di.value) di.value = today;
+    di.min = today; di.max = today;
+    show('ns');
+    setTimeout(()=>$('#nameInput').focus(), 150);
+  } catch (err) {
+    $('#gErr').textContent = 'Sign-in failed — please try again';
+  }
+}
+
+function decodeJwt(token) {
+  const base64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  const json = decodeURIComponent(atob(base64).split('').map(c =>
+    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+  ).join(''));
+  return JSON.parse(json);
+}
+
+function updateSignedPill() {
+  const pill = $('#signedPill');
+  if (!state.googleUser) { pill.style.display = 'none'; return; }
+  pill.style.display = 'flex';
+  $('#spImg').src = state.googleUser.picture || '';
+  $('#spName').textContent = state.googleUser.name || '';
+  $('#spMail').textContent = state.googleUser.email || '';
+}
+
+$('#spOut').addEventListener('click', () => {
+  if (!confirm('Sign out of Google?')) return;
+  try {
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+      google.accounts.id.disableAutoSelect();
+    }
+  } catch(_) {}
+  state.googleUser = null;
+  updateSignedPill();
+  // back to PIN — fresh staff
+  $('#nameInput').value = '';
+  checkReady();
+  show('ps');
+});
+
+/* ===== NAME / DATE / SHIFT ===== */
+function checkReady() {
+  const ok = $('#nameInput').value.trim().length > 0 && $('#dateInput').value;
+  $('#btnOpening').disabled = !ok;
+  $('#btnClosing').disabled = !ok;
+}
+$('#nameInput').addEventListener('input', checkReady);
+$('#dateInput').addEventListener('change', () => {
+  // Lock the date to today — no past, no future
+  const today = new Date().toISOString().slice(0, 10);
+  if ($('#dateInput').value !== today) {
+    $('#dateInput').value = today;
+    toast('Date is locked to today');
+  }
+  checkReady();
+});
+
+function startShift(shift) {
+  state.name = $('#nameInput').value.trim();
+  state.date = $('#dateInput').value;
+  state.shift = shift;
+  // build task list
+  state.tasks = [];
+  CHECKLISTS[shift].sections.forEach(sec => {
+    sec.tasks.forEach((label, i) => {
+      state.tasks.push({
+        section: sec.name,
+        idx: i + 1,
+        label,
+        checked: false,
+        note: "",
+        photos: [],
+      });
+    });
+  });
+  renderChecklist();
+  show('cls');
+}
+$('#btnOpening').addEventListener('click', () => startShift('opening'));
+$('#btnClosing').addEventListener('click', () => startShift('closing'));
+
+/* ===== CHECKLIST RENDER ===== */
+function updateProgress() {
+  const done = state.tasks.filter(t => t.checked).length;
+  $('#userBarProgress').textContent = `${done} / ${state.tasks.length}`;
+}
+
+function renderChecklist() {
+  const c = CHECKLISTS[state.shift];
+  $('#clTitle').textContent = c.title;
+  $('#clSub').textContent = `${state.name} • ${formatDate(state.date)}`;
+  $('#userBarName').textContent = state.name;
+
+  const list = $('#taskList');
+  list.innerHTML = '';
+  let globalIdx = 0;
+  c.sections.forEach(sec => {
+    const h = document.createElement('div');
+    h.className = 'section-title';
+    h.textContent = sec.name;
+    list.appendChild(h);
+    sec.tasks.forEach((label, i) => {
+      const taskIdx = globalIdx;
+      const t = state.tasks[taskIdx];
+      const card = document.createElement('div');
+      card.className = 'task-card' + (t.checked ? ' done' : '');
+      card.dataset.idx = taskIdx;
+      card.innerHTML = `
+        <div class="task-row">
+          <div class="task-check" data-act="toggle"></div>
+          <div class="task-body">
+            <div class="task-label"><span class="task-num">${i+1}.</span>${escapeHtml(label)}</div>
+            <div class="task-extras">
+              <input type="text" class="note-input" placeholder="Add note (optional)" value="${escapeAttr(t.note)}" data-act="note" />
+              <button class="photo-btn" data-act="photo"><span class="ico">📷</span> Photo</button>
+              <input type="file" class="photo-input" accept="image/*" capture="environment" multiple data-act="file" />
+            </div>
+            <div class="photo-thumbs"></div>
+          </div>
+        </div>
+      `;
+      list.appendChild(card);
+      renderThumbs(card, t);
+      globalIdx++;
+    });
+  });
+  updateProgress();
+}
+
+function renderThumbs(card, task) {
+  const wrap = card.querySelector('.photo-thumbs');
+  wrap.innerHTML = '';
+  task.photos.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'photo-thumb';
+    d.style.backgroundImage = `url("${p.dataUrl}")`;
+    d.innerHTML = `<button class="rm" data-act="rmphoto" data-i="${i}">×</button>`;
+    wrap.appendChild(d);
+  });
+}
+
+$('#taskList').addEventListener('click', e => {
+  const card = e.target.closest('.task-card');
+  if (!card) return;
+  const idx = +card.dataset.idx;
+  const t = state.tasks[idx];
+  const act = e.target.dataset.act;
+  if (act === 'toggle') {
+    t.checked = !t.checked;
+    card.classList.toggle('done', t.checked);
+    card.classList.remove('missing');
+    updateProgress();
+  } else if (act === 'photo') {
+    card.querySelector('input[type=file]').click();
+  } else if (act === 'rmphoto') {
+    t.photos.splice(+e.target.dataset.i, 1);
+    renderThumbs(card, t);
+  }
+});
+
+$('#taskList').addEventListener('input', e => {
+  if (e.target.dataset.act !== 'note') return;
+  const card = e.target.closest('.task-card');
+  state.tasks[+card.dataset.idx].note = e.target.value;
+});
+
+$('#taskList').addEventListener('change', async e => {
+  if (e.target.dataset.act !== 'file') return;
+  const card = e.target.closest('.task-card');
+  const t = state.tasks[+card.dataset.idx];
+  const files = Array.from(e.target.files || []);
+  for (const f of files) {
+    try {
+      const dataUrl = await compressImage(f, 1280, 0.78);
+      t.photos.push({ name: f.name, dataUrl });
+    } catch (err) {
+      console.warn('photo error', err);
+    }
+  }
+  renderThumbs(card, t);
+  e.target.value = '';
+});
+
+/* ===== Image compression so payload stays small ===== */
+function compressImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ===== BACK NAV ===== */
+$('#clBack').addEventListener('click', () => {
+  if (confirm('Go back to start? Your current progress will be lost.')) {
+    show('ns');
+  }
+});
+
+/* ===== REVIEW / VALIDATE ===== */
+$('#btnReview').addEventListener('click', () => {
+  const missing = state.tasks.map((t,i)=>({t,i})).filter(x=>!x.t.checked);
+  if (missing.length) {
+    toast(`⚠ ${missing.length} item${missing.length>1?'s':''} not checked — please complete all`);
+    // mark missing cards
+    $$('.task-card').forEach(c => c.classList.remove('missing'));
+    missing.forEach(({i})=>{
+      const card = document.querySelector(`.task-card[data-idx="${i}"]`);
+      if (card) card.classList.add('missing');
+    });
+    // scroll to first missing
+    const first = document.querySelector('.task-card.missing');
+    if (first) first.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  renderReview();
+  show('rvs');
+});
+
+function renderReview() {
+  $('#rvSub').textContent = `${state.name} • ${formatDate(state.date)} • ${state.shift==='opening'?'Opening':'Closing'}`;
+  const c = $('#reviewContent');
+  const totalPhotos = state.tasks.reduce((n,t)=>n+t.photos.length,0);
+  const totalNotes = state.tasks.filter(t=>t.note.trim()).length;
+
+  let html = `
+    <div class="review-summary">
+      <div class="row"><span class="k">Staff</span><span class="v">${escapeHtml(state.name)}</span></div>
+      <div class="row"><span class="k">Date</span><span class="v">${formatDate(state.date)}</span></div>
+      <div class="row"><span class="k">Shift</span><span class="v">${state.shift==='opening'?'Opening':'Closing'}</span></div>
+      <div class="row"><span class="k">Tasks</span><span class="v">${state.tasks.length} / ${state.tasks.length} complete ✓</span></div>
+      <div class="row"><span class="k">Notes</span><span class="v">${totalNotes}</span></div>
+      <div class="row"><span class="k">Photos</span><span class="v">${totalPhotos}</span></div>
+    </div>
+  `;
+  // Group by section
+  const bySection = {};
+  state.tasks.forEach(t => { (bySection[t.section] ||= []).push(t); });
+  Object.entries(bySection).forEach(([sec, items]) => {
+    html += `<div class="section-title">${escapeHtml(sec)}</div>`;
+    items.forEach((t, i) => {
+      html += `
+        <div class="review-item">
+          <div class="ri-task">${i+1}. ${escapeHtml(t.label)} <span style="color:#C8922A;font-weight:700;">✓</span></div>
+          ${t.note.trim() ? `<div class="ri-note">📝 ${escapeHtml(t.note)}</div>` : ''}
+          ${t.photos.length ? `<div class="ri-photos">📷 ${t.photos.length} photo${t.photos.length>1?'s':''}</div>` : ''}
+        </div>`;
+    });
+  });
+  c.innerHTML = html;
+}
+
+$('#rvBack').addEventListener('click', () => show('cls'));
+$('#rvBackBtn').addEventListener('click', () => show('cls'));
+
+/* ===== SUBMIT ===== */
+$('#btnSubmit').addEventListener('click', submitChecklist);
+
+async function submitChecklist() {
+  if (!window.SHEET_URL || window.SHEET_URL.startsWith('REPLACE_')) {
+    if (!confirm('Webhook URL is not configured.\n\nSubmit anyway as a test? (data will not be saved)')) return;
+  }
+  loader(true, 'Submitting…');
+
+  const payload = {
+    name: state.name,
+    date: state.date,
+    shift: state.shift, // 'opening' | 'closing'
+    submittedAt: new Date().toISOString(),
+    googleEmail: state.googleUser ? state.googleUser.email : '',
+    googleName:  state.googleUser ? state.googleUser.name  : '',
+    tasks: state.tasks.map(t => ({
+      section: t.section,
+      idx: t.idx,
+      label: t.label,
+      checked: t.checked,
+      note: t.note || '',
+      photos: t.photos.map(p => ({ name: p.name, dataUrl: p.dataUrl })),
+    })),
+  };
+
+  try {
+    if (window.SHEET_URL && !window.SHEET_URL.startsWith('REPLACE_')) {
+      const res = await fetch(window.SHEET_URL, {
+        method: 'POST',
+        // Apps Script doPost works best when sent as text/plain to avoid preflight
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+      });
+      // Apps Script may return CORS-opaque if not configured but submission still works
+      try { await res.text(); } catch(_) {}
+    }
+    loader(false);
+    $('#successSub').textContent = `Sent to Info@sindbadburger.com — ${state.tasks.length} tasks logged.`;
+    show('scs');
+  } catch (err) {
+    loader(false);
+    console.error(err);
+    toast('Network error — please try again');
+  }
+}
+
+/* ===== DONE / RESET ===== */
+$('#btnDone').addEventListener('click', () => {
+  // Keep the signed-in Google user so the next staff can stay signed in
+  // (Sign out button is the explicit way to switch users.)
+  const keepUser = state.googleUser;
+  state = { pin: "", name: "", date: "", shift: null, tasks: [], googleUser: keepUser };
+  $('#nameInput').value = '';
+  $('#dateInput').value = '';
+  checkReady();
+  renderPinDots();
+  show('ps');
+});
+
+/* ===== UTILS ===== */
+function formatDate(iso) {
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  const dt = new Date(+y, +m-1, +d);
+  return dt.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);}
+function escapeAttr(s){return escapeHtml(s);}
+</script>
+</body>
+</html>
