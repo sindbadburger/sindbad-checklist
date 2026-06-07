@@ -570,6 +570,10 @@ window.GOOGLE_CLIENT_ID = "315489164345-mft5dv5usasvvuc7mr9auht0uhj5mthr.apps.go
 /* ----- PIN ----- */
 const PIN = "1981";
 
+/* ----- Trust this device for 30 days (Google sign-in cache) ----- */
+const TRUST_DAYS = 30;
+const TRUST_KEY = "sb_gu_v1";
+
 /* ----- CHECKLIST DATA (from Sindbad Burger Opening_Closing Checklists.md) ----- */
 const CHECKLISTS = {
   opening: {
@@ -675,7 +679,11 @@ function pinPress(k) {
         di.value = today;
         di.min = today;
         di.max = today;
-        // If already signed in, skip Google screen
+        // If already signed in OR a trusted-device cache exists, skip Google screen
+        if (!state.googleUser) {
+          const cached = loadTrustedUser();
+          if (cached) state.googleUser = cached;
+        }
         if (state.googleUser) {
           updateSignedPill();
           show('ns');
@@ -700,6 +708,30 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'Backspace') pinPress('del');
 });
 
+/* ===== TRUSTED-DEVICE CACHE (30-day) ===== */
+function loadTrustedUser() {
+  try {
+    const raw = localStorage.getItem(TRUST_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || !data.user || !data.expiresAt) return null;
+    if (Date.now() > data.expiresAt) {
+      localStorage.removeItem(TRUST_KEY);
+      return null;
+    }
+    return data.user;
+  } catch (_) { return null; }
+}
+function saveTrustedUser(user) {
+  try {
+    const expiresAt = Date.now() + TRUST_DAYS * 24 * 60 * 60 * 1000;
+    localStorage.setItem(TRUST_KEY, JSON.stringify({ user, expiresAt }));
+  } catch (_) {}
+}
+function clearTrustedUser() {
+  try { localStorage.removeItem(TRUST_KEY); } catch (_) {}
+}
+
 /* ===== GOOGLE SIGN-IN ===== */
 let _gInited = false;
 function ensureGoogleButton() {
@@ -717,7 +749,7 @@ function ensureGoogleButton() {
     google.accounts.id.initialize({
       client_id: window.GOOGLE_CLIENT_ID,
       callback: handleGoogleCredential,
-      auto_select: false,
+      auto_select: true,
       cancel_on_tap_outside: true,
     });
     _gInited = true;
@@ -742,6 +774,7 @@ function handleGoogleCredential(resp) {
       picture: payload.picture || '',
       sub: payload.sub || '',
     };
+    saveTrustedUser(state.googleUser); // remember this device for 30 days
     updateSignedPill();
     // pre-fill today's date again in case it was cleared
     const today = new Date().toISOString().slice(0, 10);
@@ -773,12 +806,13 @@ function updateSignedPill() {
 }
 
 $('#spOut').addEventListener('click', () => {
-  if (!confirm('Sign out of Google?')) return;
+  if (!confirm('Sign out of Google? You\'ll need to sign in again next time.')) return;
   try {
     if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
       google.accounts.id.disableAutoSelect();
     }
   } catch(_) {}
+  clearTrustedUser(); // forget this device
   state.googleUser = null;
   updateSignedPill();
   // back to PIN — fresh staff
